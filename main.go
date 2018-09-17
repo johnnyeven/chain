@@ -14,8 +14,38 @@
 
 package main
 
-import "git.profzone.net/profzone/chain/cmd"
+import (
+	"git.profzone.net/profzone/chain/cmd"
+	"github.com/sirupsen/logrus"
+	"os"
+	"bufio"
+	"fmt"
+	"strings"
+)
 
 func main() {
-	cmd.Execute()
+	logrus.SetOutput(os.Stdout)
+	logrus.SetLevel(logrus.DebugLevel)
+
+	go cmd.Execute()
+	//services.StartTask()
+
+	var command string
+	scanner := bufio.NewScanner(os.Stdin)
+	for  {
+		fmt.Print("> ")
+		scanner.Scan()
+		command = scanner.Text()
+		if command == "" {
+			continue
+		} else if command == "quit" || command == "exit" {
+			fmt.Println("Goodbye")
+			os.Exit(0)
+		}
+		commands := []string{os.Args[0]}
+		commands = append(commands, strings.Split(command, " ")...)
+		os.Args = commands
+
+		go cmd.Execute()
+	}
 }
