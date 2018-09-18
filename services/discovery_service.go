@@ -4,6 +4,10 @@ import (
 	"git.profzone.net/profzone/chain/messages"
 	"git.profzone.net/profzone/chain/global"
 	"git.profzone.net/profzone/terra/dht"
+	"bytes"
+	"errors"
+	"strings"
+	"git.profzone.net/profzone/chain/network"
 )
 
 var _ interface {
@@ -19,12 +23,16 @@ func NewDiscoveryService() Service {
 func (s *DiscoveryService) Messages() []messages.MessageHandler {
 	return []messages.MessageHandler{
 		{
-			Type:   global.MESSAGE_TYPE__NEW_PEERS_TO_PEER,
-			Runner: s.RunNewPeersToPeer,
+			Type:   global.MESSAGE_TYPE__HELLO_TCP,
+			Runner: s.RunHelloTCP,
 		},
 		{
-			Type:   global.MESSAGE_TYPE__BROADCAST_NEW_PEER_TO_PEERS,
-			Runner: s.RunBroadcastNewPeerToPeers,
+			Type:   global.MESSAGE_TYPE__FIND_NODE,
+			Runner: s.RunFindNode,
+		},
+		{
+			Type:   global.MESSAGE_TYPE__FIND_NODE_ACK,
+			Runner: s.RunFindNodeAck,
 		},
 	}
 }
@@ -37,109 +45,132 @@ func (s *DiscoveryService) Stop() error {
 	return nil
 }
 
-func (s *DiscoveryService) RunNewPeersToPeer(t *dht.Transport, msg *messages.Message) error {
-	payload := &messages.NewPeersToPeer{}
+func (s *DiscoveryService) RunHelloTCP(t *dht.Transport, msg *messages.Message) error {
+	//peer := p2p.GetPeerManager().Get(msg.PeerID)
+	//peer.TCPClient = conn.(*net.TCPConn)
+
+	return nil
+}
+
+func (s *DiscoveryService) RunFindNode(t *dht.Transport, msg *messages.Message) error {
+
+	payload := &messages.FindNode{}
 	err := payload.DecodeFromSource(msg.Payload)
 	if err != nil {
 		return err
 	}
 
-	//peers := payload.Peers
-	//pm := p2p.GetPeerManager()
-	//if pm == nil {
-	//	return errors.New("PeerManager not ready")
-	//}
-	//for _, peerInfo := range peers {
-	//	if peerInfo.Guid == pm.Guid {
-	//		continue
-	//	}
-	//	if pm.Get(peerInfo.Guid) != nil {
-	//		continue
-	//	}
-	//	logrus.Debugf("new introduced peer: %v", peerInfo.Guid)
-	//	peer := p2p.NewPeer(peerInfo.Guid, peerInfo.Ip, peerInfo.Port, peerInfo.Version)
-	//	SayHelloAction(peer)
-	//}
+	targetID := dht.NewIdentityFromBytes(payload.TargetGuid)
+
+	var nodes string
+	node, _ := t.GetDHT().GetRoutingTable().GetNodeBucketByID(targetID)
+	if node != nil {
+		nodes = node.CompactNodeInfo()
+	} else {
+		nodes = strings.Join(t.GetDHT().GetRoutingTable().GetNeighborCompactInfos(targetID, t.GetDHT().K), "")
+	}
+
+	message := &messages.FindNodeAck{
+		Guid:    []byte(t.GetDHT().ID(targetID.RawString())),
+		Version: global.Config.Version,
+		//Ip:      network.P2P.AnnouncedAddr.IP,
+		//Port:    uint32(network.P2P.AnnouncedAddr.Port),
+		Nodes:   []byte(nodes),
+	}
+
+	request := t.MakeResponse(nil, msg.RemoteAddr, msg.MessageID, message)
+	t.GetClient().(*network.ProtobufClient).Send(request)
+
+	if bytes.Compare(msg.PeerID, global.Config.Guid) == 0 {
+		return nil
+	}
+
+	n, _ := dht.NewNode(string(payload.Guid), msg.RemoteAddr.Network(), msg.RemoteAddr.String())
+	if t.GetDHT().GetRoutingTable().Insert(n) {
+		if t.GetDHT().NewNodeHandler != nil {
+			t.GetDHT().NewNodeHandler(n)
+		}
+	}
 
 	return nil
 }
 
-func (s *DiscoveryService) RunBroadcastNewPeerToPeers(t *dht.Transport, msg *messages.Message) error {
-	payload := &messages.BroadcastNewPeerToPeers{}
+func (s *DiscoveryService) RunFindNodeAck(t *dht.Transport, msg *messages.Message) error {
+
+	payload := &messages.FindNodeAck{}
 	err := payload.DecodeFromSource(msg.Payload)
 	if err != nil {
 		return err
 	}
-	//
-	//pm := p2p.GetPeerManager()
-	//if pm == nil {
-	//	return errors.New("PeerManager not ready")
-	//}
-	//if payload.Guid == pm.Guid {
-	//	return nil
-	//}
-	//if pm.Get(payload.Guid) != nil {
-	//	return nil
-	//}
-	//logrus.Debugf("new broadcasting peer: %v", payload.Guid)
-	//peer := p2p.NewPeer(0, payload.Ip, payload.Port, 1)
-	//SayHelloAction(peer)
+
+	tranID := msg.MessageID
+	tran := t.GetDHT().GetTransport().Get(tranID, msg.RemoteAddr)
+	if tran == nil {
+		return errors.New("error trans")
+	}
+
+	defer func() {
+		tran.ResponseChannel <- struct{}{}
+	}()
+
+	guid := payload.Guid
+
+	if tran.ClientID.(*dht.Identity) != nil && tran.ClientID.(*dht.Identity).RawString() != string(guid) {
+		t.GetDHT().GetRoutingTable().RemoveByAddr(msg.RemoteAddr.String())
+		return nil
+	}
+
+	node, err := dht.NewNode(string(guid), msg.RemoteAddr.Network(), msg.RemoteAddr.String())
+	if err != nil {
+		return err
+	}
+
+	if err := findOrContinueRequestTarget(t.GetDHT(), payload.Guid, payload); err != nil {
+		return err
+	}
+
+	if bytes.Compare(msg.PeerID, global.Config.Guid) == 0 {
+		return nil
+	}
+
+	if t.GetDHT().GetRoutingTable().Insert(node) {
+		if t.GetDHT().NewNodeHandler != nil {
+			t.GetDHT().NewNodeHandler(node)
+		}
+	}
 
 	return nil
 }
 
-//func NewPeersToPeerAction(target *p2p.Peer) error {
-//	pm := p2p.GetPeerManager()
-//	if pm == nil {
-//		return errors.New("PeerManager not exist")
-//	}
-//	return target.PrepareSendUDPMessage(func(peer *p2p.Peer) error {
-//		message := &messages.NewPeersToPeer{
-//			Peers: make([]*messages.NewPeersToPeer_Peer, 0),
-//		}
-//
-//		pm.Iterator(func(guid int64, friend *p2p.Peer) error {
-//			message.Peers = append(message.Peers, &messages.NewPeersToPeer_Peer{
-//				Ip:      friend.IP,
-//				Port:    uint32(friend.Port),
-//				Guid:    friend.Guid,
-//				Version: friend.Version,
-//			})
-//			return nil
-//		}, false)
-//
-//		if len(message.Peers) > 0 {
-//			err := messages.SendUDPMessage(peer.UDPClient, peer.UDPRemoteAddr, pm.Guid, message)
-//			if err != nil {
-//				logrus.Errorf("NewPeersToPeerAction module.SendMessage err: %v", err)
-//				return err
-//			}
-//		}
-//		return nil
-//	})
-//}
-//
-//func BroadcastNewPeerToPeersAction(newPeer *p2p.Peer) error {
-//	pm := p2p.GetPeerManager()
-//	if pm == nil {
-//		return errors.New("PeerManager not exist")
-//	}
-//	pm.Iterator(func(guid int64, target *p2p.Peer) error {
-//		return target.PrepareSendUDPMessage(func(p *p2p.Peer) error {
-//			message := &messages.BroadcastNewPeerToPeers{
-//				Ip:      newPeer.IP,
-//				Port:    uint32(newPeer.Port),
-//				Guid:    newPeer.Guid,
-//				Version: newPeer.Version,
-//			}
-//			err := messages.SendUDPMessage(p.UDPClient, p.UDPRemoteAddr, pm.Guid, message)
-//			if err != nil {
-//				logrus.Errorf("BroadcastNewPeerToPeersAction module.SendMessage err: %v", err)
-//				return err
-//			}
-//			return nil
-//		})
-//	}, false)
-//
-//	return nil
-//}
+func findOrContinueRequestTarget(table *dht.DistributedHashTable, targetID []byte, data *messages.FindNodeAck) error {
+
+	nodes := string(data.Nodes)
+	if len(nodes)%26 != 0 {
+		return errors.New("the length of nodes should can be divided by 26")
+	}
+
+	hasNew, found := false, false
+	for i := 0; i < len(nodes)/26; i++ {
+		node, _ := dht.NewNodeFromCompactInfo(string(nodes[i*26:(i+1)*26]), table.Network)
+		if bytes.Compare(node.ID.RawData(), targetID) == 0 {
+			found = true
+		}
+
+		if table.GetRoutingTable().Insert(node) {
+			hasNew = true
+			if table.NewNodeHandler != nil {
+				table.NewNodeHandler(node)
+			}
+		}
+	}
+	if found || !hasNew {
+		return nil
+	}
+
+	id := dht.NewIdentityFromBytes(targetID)
+	for _, node := range table.GetRoutingTable().GetNeighbors(id, table.K) {
+		network.Handshake(node, table.GetTransport(), targetID)
+	}
+
+	return nil
+}

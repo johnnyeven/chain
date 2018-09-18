@@ -4,15 +4,16 @@ import (
 	"net"
 	"git.profzone.net/profzone/terra/dht"
 	"git.profzone.net/profzone/chain/global"
+	"github.com/sirupsen/logrus"
 )
 
 var P2P *Server
 
 type Server struct {
-	transport     *dht.Transport
-	AnnouncedAddr *net.UDPAddr
-	dht           *dht.DistributedHashTable
-	quitChannel   chan struct{}
+	listener    net.Listener
+	dht         *dht.DistributedHashTable
+	quitChannel chan struct{}
+	peerManager *PeerManager
 }
 
 func GetChainDHTConfig() *dht.Config {
@@ -29,6 +30,7 @@ func GetChainDHTConfig() *dht.Config {
 		LocalAddr:            global.Config.LocalAddr.String(),
 		SeedNodes:            global.Config.SeedNodes,
 		TransportConstructor: NewProtobufTransport,
+		NewNodeHandler:       NewNodeHandler,
 		Handler:              DHTPacketHandler,
 		HandshakeFunc:        Handshake,
 		PingFunc:             Ping,
@@ -45,37 +47,41 @@ func NewServer() *Server {
 	P2P = &Server{
 		dht:         table,
 		quitChannel: make(chan struct{}),
+		peerManager: NewPeerManager(),
 	}
 
 	return P2P
 }
 
 func (s *Server) init() {
-
+	var err error
+	s.listener, err = net.Listen("tcp", s.dht.LocalAddr)
+	if err != nil {
+		logrus.Panicf("[Server] net.Listen error: %v", err.Error())
+	}
+	logrus.Infof("[Server] created and listened at: %s ...", s.dht.LocalAddr)
 }
 
 func (s *Server) listen() {
 
-	//realaddr := conn.LocalAddr().(*net.UDPAddr)
-	//if s.NAT != nil {
-	//	if !realaddr.IP.IsLoopback() {
-	//		go nat.Map(s.NAT, s.quit, "udp", realaddr.Port, realaddr.Port, "terra discovery")
-	//	}
-	//	// TODO: react to external IP changes over time.
-	//	ext, err := s.NAT.ExternalIP()
-	//	if err == nil {
-	//		realaddr = &net.UDPAddr{IP: ext, Port: realaddr.Port}
-	//		logrus.Debugf("nat device found. realaddr detected: %v", realaddr)
-	//	} else {
-	//		logrus.Debugf("nat device not found. err: %v", err)
-	//	}
-	//}
-	//s.AnnouncedAddr = realaddr
+	for {
+		conn, err := s.listener.Accept()
+		if err != nil {
+			logrus.Fatalf("[Server] listener.Accept error: %v", err)
+		}
+
+		go s.handleConnection(conn)
+	}
+}
+
+func (s *Server) handleConnection(conn net.Conn) {
+	NewPeerWithConnection(nil, conn.(*net.TCPConn))
+	//TODO p.Run() to start receiving request, first will received Hello_tcp command
 }
 
 func (s *Server) Run() {
 	s.init()
-	s.listen()
+	go s.listen()
 
 	go s.dht.Run()
 
@@ -91,6 +97,5 @@ Run:
 func (s *Server) Close() {
 	s.quitChannel <- struct{}{}
 	s.dht.Close()
-	s.transport.Close()
 	close(s.quitChannel)
 }

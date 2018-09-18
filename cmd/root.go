@@ -42,12 +42,12 @@ var RootCmd = &cobra.Command{
 		stack := services.NewStackWithTemplate("blockchain")
 		stack.Start()
 
+		// start cron
+		services.StartTask()
+
 		// start network
 		s := network.NewServer()
 		s.Run()
-
-		// start cron
-		services.StartTask()
 	},
 }
 
