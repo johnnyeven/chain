@@ -28,6 +28,7 @@ import (
 
 var (
 	cfgFile string
+	fileGroup string
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -35,7 +36,7 @@ var RootCmd = &cobra.Command{
 	Use:   "chain",
 	Short: "A brief description of your application",
 	Run: func(cmd *cobra.Command, args []string) {
-		global.InitConfig()
+		global.InitConfig(fileGroup)
 
 		// start services
 		stack := services.NewStackWithTemplate("blockchain")
@@ -70,17 +71,23 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	RootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+
+	RootCmd.PersistentFlags().StringVarP(&fileGroup, "file-group", "g", "", "")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	var configFileName = ".chain"
+	if fileGroup != "" {
+		configFileName += fmt.Sprint(".", fileGroup)
+	}
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Search config in home directory with name ".chain" (without extension).
 		viper.AddConfigPath("./")
-		viper.SetConfigName(".chain")
+		viper.SetConfigName(configFileName)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match

@@ -78,7 +78,7 @@ func (c *ProtobufClient) MakeRequest(id interface{}, remoteAddr net.Addr, reques
 	}
 	message := &messages.Message{
 		Header:    msg.GetMessageType(),
-		PeerID:    id.(int64),
+		PeerID:    global.Config.Guid,
 		MessageID: guid.GetGUID(),
 		Payload:   payload,
 	}
@@ -103,7 +103,7 @@ func (c *ProtobufClient) MakeResponse(id interface{}, remoteAddr net.Addr, tranI
 	}
 	message := &messages.Message{
 		Header:    msg.GetMessageType(),
-		PeerID:    id.(int64),
+		PeerID:    global.Config.Guid,
 		MessageID: tranID.(int64),
 		Payload:   payload,
 	}
@@ -129,6 +129,7 @@ func (c *ProtobufClient) SendRequest(request *dht.Request, retry int) {
 	defer c.table.GetTransport().DeleteTransaction(tran.ID)
 
 	success := false
+Run:
 	for i := 0; i < retry; i++ {
 		logrus.Debugf("[ProtobufClient].Request c.conn.WriteToUDP try %d", i+1)
 		err := c.Send(request)
@@ -140,7 +141,7 @@ func (c *ProtobufClient) SendRequest(request *dht.Request, retry int) {
 		select {
 		case <-tran.ResponseChannel:
 			success = true
-			break
+			break Run
 		case <-time.After(time.Second * 15):
 		}
 	}

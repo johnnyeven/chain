@@ -3,7 +3,7 @@ syntax = "proto3";
 package messages;
 
 message HelloAck {
-    int64 guid = 1;
+    bytes guid = 1;
     uint32 version = 2;
     bytes ip = 3;
     uint32 port = 4;

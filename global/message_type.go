@@ -9,6 +9,8 @@ const (
 	MESSAGE_TYPE_UNKNOWN                      MessageType = iota
 	MESSAGE_TYPE__HEARTBEAT                    // 心跳检测
 	MESSAGE_TYPE__HEARTBEAT_ACK                // 心跳检测确认
+	MESSAGE_TYPE__FIND_NODE                    // 查找节点
+	MESSAGE_TYPE__FIND_NODE_ACK                // 查找节点响应
 	MESSAGE_TYPE__HELLO                        // 首次握手
 	MESSAGE_TYPE__HELLO_ACK                    // 首次握手确认
 	MESSAGE_TYPE__HELLO_TCP                    // TCP握手

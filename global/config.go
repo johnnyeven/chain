@@ -3,7 +3,6 @@ package global
 import (
 	"github.com/boltdb/bolt"
 	"time"
-	guid2 "github.com/marpie/goguid"
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
@@ -12,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"math"
 	"net"
+	"git.profzone.net/profzone/terra/dht/util"
 )
 
 var ConfigFileGroup = ""
@@ -20,7 +20,7 @@ var Config = &struct {
 	DB                    *bolt.DB
 	SeedNodes             []string
 	Version               uint32
-	Guid                  int64
+	Guid                  []byte
 	ReceiveAddress        string
 	HeartbeatTaskSpec     string
 	RequestHeightTaskSpec string
@@ -53,9 +53,9 @@ var Config = &struct {
 	RequestHeightTaskSpec: "0 * * * * *",
 }
 
-func InitConfig() {
+func InitConfig(fileGroup string) {
 	var err error
-	ConfigFileGroup = viper.GetString("CONFIG_FILE_GROUP")
+	ConfigFileGroup = fileGroup
 	Config.DB, err = bolt.Open(GetConfigFilePath(), 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		panic(fmt.Sprintf("InitConfig err: %v", err))
@@ -139,7 +139,6 @@ func checkFirstRunSeedConfig(bucket *bolt.Bucket) {
 			Config.SeedNodes = seedAddrs
 			return
 		}
-		seedAddrs = append(seedAddrs, DefaultSeedNode)
 	}
 	Config.SeedNodes = seedAddrs
 
@@ -156,14 +155,12 @@ func checkFirstRunSeedConfig(bucket *bolt.Bucket) {
 func checkFirstRunGuidConfig(bucket *bolt.Bucket) {
 	value := bucket.Get([]byte(ConfigGuidKey))
 	if value != nil {
-		Config.Guid = int64(binary.BigEndian.Uint64(value))
+		Config.Guid = value
 		return
 	}
 
-	Config.Guid = guid2.GetGUID()
-	buffer := bytes.NewBuffer([]byte{})
-	binary.Write(buffer, binary.BigEndian, Config.Guid)
-	bucket.Put([]byte(ConfigGuidKey), buffer.Bytes())
+	Config.Guid = []byte(util.RandomString(20))
+	bucket.Put([]byte(ConfigGuidKey), []byte(Config.Guid))
 }
 
 func checkFirstRunVersionConfig(bucket *bolt.Bucket) {

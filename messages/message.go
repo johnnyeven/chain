@@ -10,7 +10,7 @@ import (
 
 type Message struct {
 	Header     global.MessageType
-	PeerID     int64
+	PeerID     []byte
 	MessageID  int64
 	Payload    []byte
 	RemoteAddr net.Addr

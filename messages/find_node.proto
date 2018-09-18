@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package messages;
+
+message FindNode {
+    bytes guid = 1;
+    uint32 version = 2;
+    bytes ip = 3;
+    uint32 port = 4;
+    bytes targetGuid = 5;
+}

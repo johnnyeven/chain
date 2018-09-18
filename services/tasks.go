@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/robfig/cron"
-	"git.profzone.net/profzone/peer-to-world/global"
+	"git.profzone.net/profzone/chain/global"
 )
 
 var applyTask *cron.Cron

@@ -14,6 +14,8 @@ func init() {
 	git_profzone_net_profzone_libtools_courier_enumeration.RegisterEnums("MessageType", map[string]string{
 		"BLOCKS_HASH":                 "发送区块哈希",
 		"BROADCAST_NEW_PEER_TO_PEERS": "新节点接入广播",
+		"FIND_NODE":                   "查找节点",
+		"FIND_NODE_ACK":               "查找节点响应",
 		"GET_BLOCK":                   "获取区块",
 		"GET_BLOCK_ACK":               "响应获取区块",
 		"HEARTBEAT":                   "心跳检测",
@@ -35,6 +37,10 @@ func ParseMessageTypeFromString(s string) (MessageType, error) {
 		return MESSAGE_TYPE__BLOCKS_HASH, nil
 	case "BROADCAST_NEW_PEER_TO_PEERS":
 		return MESSAGE_TYPE__BROADCAST_NEW_PEER_TO_PEERS, nil
+	case "FIND_NODE":
+		return MESSAGE_TYPE__FIND_NODE, nil
+	case "FIND_NODE_ACK":
+		return MESSAGE_TYPE__FIND_NODE_ACK, nil
 	case "GET_BLOCK":
 		return MESSAGE_TYPE__GET_BLOCK, nil
 	case "GET_BLOCK_ACK":
@@ -67,6 +73,10 @@ func ParseMessageTypeFromLabelString(s string) (MessageType, error) {
 		return MESSAGE_TYPE__BLOCKS_HASH, nil
 	case "新节点接入广播":
 		return MESSAGE_TYPE__BROADCAST_NEW_PEER_TO_PEERS, nil
+	case "查找节点":
+		return MESSAGE_TYPE__FIND_NODE, nil
+	case "查找节点响应":
+		return MESSAGE_TYPE__FIND_NODE_ACK, nil
 	case "获取区块":
 		return MESSAGE_TYPE__GET_BLOCK, nil
 	case "响应获取区块":
@@ -99,6 +109,8 @@ func (MessageType) Enums() map[int][]string {
 	return map[int][]string{
 		int(MESSAGE_TYPE__BLOCKS_HASH):                 {"BLOCKS_HASH", "发送区块哈希"},
 		int(MESSAGE_TYPE__BROADCAST_NEW_PEER_TO_PEERS): {"BROADCAST_NEW_PEER_TO_PEERS", "新节点接入广播"},
+		int(MESSAGE_TYPE__FIND_NODE):                   {"FIND_NODE", "查找节点"},
+		int(MESSAGE_TYPE__FIND_NODE_ACK):               {"FIND_NODE_ACK", "查找节点响应"},
 		int(MESSAGE_TYPE__GET_BLOCK):                   {"GET_BLOCK", "获取区块"},
 		int(MESSAGE_TYPE__GET_BLOCK_ACK):               {"GET_BLOCK_ACK", "响应获取区块"},
 		int(MESSAGE_TYPE__HEARTBEAT):                   {"HEARTBEAT", "心跳检测"},
@@ -119,6 +131,10 @@ func (v MessageType) String() string {
 		return "BLOCKS_HASH"
 	case MESSAGE_TYPE__BROADCAST_NEW_PEER_TO_PEERS:
 		return "BROADCAST_NEW_PEER_TO_PEERS"
+	case MESSAGE_TYPE__FIND_NODE:
+		return "FIND_NODE"
+	case MESSAGE_TYPE__FIND_NODE_ACK:
+		return "FIND_NODE_ACK"
 	case MESSAGE_TYPE__GET_BLOCK:
 		return "GET_BLOCK"
 	case MESSAGE_TYPE__GET_BLOCK_ACK:
@@ -151,6 +167,10 @@ func (v MessageType) Label() string {
 		return "发送区块哈希"
 	case MESSAGE_TYPE__BROADCAST_NEW_PEER_TO_PEERS:
 		return "新节点接入广播"
+	case MESSAGE_TYPE__FIND_NODE:
+		return "查找节点"
+	case MESSAGE_TYPE__FIND_NODE_ACK:
+		return "查找节点响应"
 	case MESSAGE_TYPE__GET_BLOCK:
 		return "获取区块"
 	case MESSAGE_TYPE__GET_BLOCK_ACK:
