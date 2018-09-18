@@ -15,12 +15,8 @@ type Server struct {
 	quitChannel   chan struct{}
 }
 
-func NewServer() *Server {
-	if P2P != nil {
-		return P2P
-	}
-
-	table := &dht.DistributedHashTable{
+func GetChainDHTConfig() *dht.Config {
+	return &dht.Config{
 		BucketExpiredAfter:   global.Config.BucketExpiredAfter,
 		NodeExpiredAfter:     global.Config.NodeExpriedAfter,
 		CheckBucketPeriod:    global.Config.CheckBucketPeriod,
@@ -32,10 +28,19 @@ func NewServer() *Server {
 		Network:              global.Config.Network,
 		LocalAddr:            global.Config.LocalAddr.String(),
 		SeedNodes:            global.Config.SeedNodes,
+		TransportConstructor: NewProtobufTransport,
 		Handler:              DHTPacketHandler,
 		HandshakeFunc:        Handshake,
 		PingFunc:             Ping,
 	}
+}
+
+func NewServer() *Server {
+	if P2P != nil {
+		return P2P
+	}
+
+	table := dht.NewDHT(GetChainDHTConfig())
 
 	P2P = &Server{
 		dht:         table,
@@ -51,6 +56,21 @@ func (s *Server) init() {
 
 func (s *Server) listen() {
 
+	//realaddr := conn.LocalAddr().(*net.UDPAddr)
+	//if s.NAT != nil {
+	//	if !realaddr.IP.IsLoopback() {
+	//		go nat.Map(s.NAT, s.quit, "udp", realaddr.Port, realaddr.Port, "terra discovery")
+	//	}
+	//	// TODO: react to external IP changes over time.
+	//	ext, err := s.NAT.ExternalIP()
+	//	if err == nil {
+	//		realaddr = &net.UDPAddr{IP: ext, Port: realaddr.Port}
+	//		logrus.Debugf("nat device found. realaddr detected: %v", realaddr)
+	//	} else {
+	//		logrus.Debugf("nat device not found. err: %v", err)
+	//	}
+	//}
+	//s.AnnouncedAddr = realaddr
 }
 
 func (s *Server) Run() {

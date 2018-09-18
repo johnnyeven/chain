@@ -1,0 +1,13 @@
+syntax="proto3";
+
+package messages;
+
+message NewPeersToPeer {
+    message Peer {
+        bytes ip = 1;
+        uint32 port = 2;
+        int64 guid = 3;
+        uint32 version = 4;
+    }
+    repeated Peer peers = 1;
+}

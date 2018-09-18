@@ -17,4 +17,6 @@ const (
 	DefaultVersion  uint32 = 32
 	DefaultPort     uint32 = 34212
 	DefaultSeedNode        = "127.0.0.1:34212"
+
+	HeaderLength uint32 = 4
 )

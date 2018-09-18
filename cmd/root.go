@@ -23,6 +23,7 @@ import (
 	"git.profzone.net/profzone/chain/global"
 	"git.profzone.net/profzone/chain/network"
 	"git.profzone.net/profzone/chain/services"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -36,13 +37,16 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		global.InitConfig()
 
+		// start services
+		stack := services.NewStackWithTemplate("blockchain")
+		stack.Start()
+
 		// start network
 		s := network.NewServer()
 		s.Run()
 
-		// start services
-		stack := services.NewStackWithTemplate("blockchain")
-		stack.Start()
+		// start cron
+		services.StartTask()
 	},
 }
 
@@ -84,5 +88,15 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	}
+
+	env := viper.GetString("ENV")
+	switch env {
+	case "LOCAL":
+		logrus.SetLevel(logrus.DebugLevel)
+		break
+	case "PROD":
+	default:
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 }

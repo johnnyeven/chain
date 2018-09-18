@@ -4,13 +4,21 @@ import (
 	"git.profzone.net/profzone/chain/global"
 	"git.profzone.net/profzone/terra/dht"
 	"github.com/sirupsen/logrus"
+	"net"
+	"encoding/gob"
 )
 
 type Message struct {
-	Header    global.MessageType
-	MessageID int64
-	PeerID    int64
-	Payload   []byte
+	Header     global.MessageType
+	PeerID     int64
+	MessageID  int64
+	Payload    []byte
+	RemoteAddr net.Addr
+}
+
+func init() {
+	gob.Register(&net.UDPAddr{})
+	gob.Register(&net.TCPAddr{})
 }
 
 type MessageSerializable interface {
@@ -50,7 +58,7 @@ func (m *MessageManager) RegisterMessage(handler MessageHandler) {
 	m.messageMap.Set(handler.Type, handler.Runner)
 }
 
-func (m *MessageManager) GetMessageRunner(messageType global.MessageType) MessageRunner {
-	v, _ := m.messageMap.Get(messageType)
-	return v.(MessageRunner)
+func (m *MessageManager) GetMessageRunner(messageType global.MessageType) (MessageRunner, bool) {
+	v, ok := m.messageMap.Get(messageType)
+	return v.(MessageRunner), ok
 }

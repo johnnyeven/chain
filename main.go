@@ -25,10 +25,8 @@ import (
 
 func main() {
 	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.DebugLevel)
 
 	go cmd.Execute()
-	//services.StartTask()
 
 	var command string
 	scanner := bufio.NewScanner(os.Stdin)
