@@ -31,6 +31,7 @@ func DHTPacketHandler(table *dht.DistributedHashTable, packet dht.Packet) {
 func NewNodeHandler(peerID []byte, node *dht.Node) {
 	logrus.Infof("new node recorded, id: %x, ip: %s, port: %d", []byte(node.ID.RawString()), node.Addr.IP.String(), node.Addr.Port)
 
+	//TODO PeerManager count limit
 	if P2P.peerManager.Has(peerID) {
 		return
 	}

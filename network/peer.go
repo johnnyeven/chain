@@ -4,6 +4,7 @@ import (
 	"git.profzone.net/profzone/terra/dht"
 	"net"
 	"git.profzone.net/profzone/chain/messages"
+	"git.profzone.net/profzone/chain/global"
 )
 
 type Peer struct {
@@ -57,7 +58,7 @@ func (p *Peer) GetTransport() *dht.Transport {
 
 func (p *Peer) Handshake() {
 	message := &messages.HelloTCP{
-		Guid: p.Guid,
+		Guid: global.Config.Guid,
 		Node: []byte(p.Node.CompactNodeInfo()),
 	}
 	request := p.transport.MakeRequest(p.Guid, p.Node.Addr, "", message)

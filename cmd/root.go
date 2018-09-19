@@ -38,6 +38,8 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		global.InitConfig(fileGroup)
 
+		fmt.Printf("GUID: %x\n", global.Config.Guid)
+
 		// start services
 		stack := services.NewStackWithTemplate("blockchain")
 		stack.Start()
