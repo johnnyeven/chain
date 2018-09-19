@@ -16,8 +16,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/profzone/chain/blockchain"
-	"github.com/profzone/chain/services"
+	"github.com/johnnyeven/chain/blockchain"
+	"github.com/johnnyeven/chain/services"
 )
 
 var (

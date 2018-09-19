@@ -1,8 +1,8 @@
 package network
 
 import (
-	"github.com/profzone/terra/dht"
-	"github.com/profzone/chain/messages"
+	"github.com/johnnyeven/terra/dht"
+	"github.com/johnnyeven/chain/messages"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,8 +1,8 @@
 package messages
 
 import (
-	"github.com/profzone/chain/global"
-	"github.com/profzone/terra/dht"
+	"github.com/johnnyeven/chain/global"
+	"github.com/johnnyeven/terra/dht"
 	"github.com/sirupsen/logrus"
 	"net"
 	"encoding/gob"

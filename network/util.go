@@ -1,9 +1,9 @@
 package network
 
 import (
-	"github.com/profzone/chain/messages"
+	"github.com/johnnyeven/chain/messages"
 	"net"
-	"github.com/profzone/chain/global"
+	"github.com/johnnyeven/chain/global"
 	"encoding/binary"
 	"encoding/gob"
 	"bytes"

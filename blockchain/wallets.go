@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"crypto/elliptic"
-	"github.com/profzone/chain/global"
+	"github.com/johnnyeven/chain/global"
 )
 
 type WalletManager struct {

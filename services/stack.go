@@ -3,7 +3,7 @@ package services
 import (
 	"reflect"
 	"fmt"
-	"github.com/profzone/chain/messages"
+	"github.com/johnnyeven/chain/messages"
 )
 
 type Stack struct {

@@ -2,7 +2,7 @@ package messages
 
 import (
 	"github.com/golang/protobuf/proto"
-	"github.com/profzone/chain/global"
+	"github.com/johnnyeven/chain/global"
 )
 
 var _ interface {

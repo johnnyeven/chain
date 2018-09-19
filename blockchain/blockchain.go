@@ -4,7 +4,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/sirupsen/logrus"
 	"sync"
-	"github.com/profzone/chain/global"
+	"github.com/johnnyeven/chain/global"
 )
 
 type BlockChain struct {

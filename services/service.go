@@ -1,6 +1,6 @@
 package services
 
-import "github.com/profzone/chain/messages"
+import "github.com/johnnyeven/chain/messages"
 
 type Service interface {
 	Messages() []messages.MessageHandler

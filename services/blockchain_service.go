@@ -1,11 +1,11 @@
 package services
 
 import (
-	"github.com/profzone/chain/blockchain"
-	"github.com/profzone/chain/messages"
-	"github.com/profzone/chain/global"
-	"github.com/profzone/terra/dht"
-	"github.com/profzone/chain/network"
+	"github.com/johnnyeven/chain/blockchain"
+	"github.com/johnnyeven/chain/messages"
+	"github.com/johnnyeven/chain/global"
+	"github.com/johnnyeven/terra/dht"
+	"github.com/johnnyeven/chain/network"
 	"github.com/sirupsen/logrus"
 )
 

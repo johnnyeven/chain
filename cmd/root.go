@@ -20,9 +20,9 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/profzone/chain/global"
-	"github.com/profzone/chain/network"
-	"github.com/profzone/chain/services"
+	"github.com/johnnyeven/chain/global"
+	"github.com/johnnyeven/chain/network"
+	"github.com/johnnyeven/chain/services"
 	"github.com/sirupsen/logrus"
 )
 

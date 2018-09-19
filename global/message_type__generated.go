@@ -5,7 +5,7 @@ import (
 	"encoding"
 	"errors"
 
-	git_profzone_net_profzone_libtools_courier_enumeration "github.com/profzone/libtools/courier/enumeration"
+	git_profzone_net_profzone_libtools_courier_enumeration "github.com/johnnyeven/libtools/courier/enumeration"
 )
 
 var InvalidMessageType = errors.New("invalid MessageType")

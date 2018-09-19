@@ -17,7 +17,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/sirupsen/logrus"
-	"github.com/profzone/chain/blockchain"
+	"github.com/johnnyeven/chain/blockchain"
 )
 
 // getWalletsCmd represents the getWallets command

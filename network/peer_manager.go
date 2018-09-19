@@ -1,7 +1,7 @@
 package network
 
 import (
-	"github.com/profzone/terra/dht"
+	"github.com/johnnyeven/terra/dht"
 	"reflect"
 )
 

@@ -1,10 +1,10 @@
 package network
 
 import (
-	"github.com/profzone/terra/dht"
+	"github.com/johnnyeven/terra/dht"
 	"net"
-	"github.com/profzone/chain/messages"
-	"github.com/profzone/chain/global"
+	"github.com/johnnyeven/chain/messages"
+	"github.com/johnnyeven/chain/global"
 )
 
 type Peer struct {

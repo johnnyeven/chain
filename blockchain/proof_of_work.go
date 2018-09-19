@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"github.com/sirupsen/logrus"
 	"encoding/gob"
-	"github.com/profzone/chain/global"
+	"github.com/johnnyeven/chain/global"
 )
 
 var (
