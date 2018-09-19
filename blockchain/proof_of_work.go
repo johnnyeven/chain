@@ -7,12 +7,11 @@ import (
 	"crypto/sha256"
 	"github.com/sirupsen/logrus"
 	"encoding/gob"
-	"fmt"
 	"git.profzone.net/profzone/chain/global"
 )
 
 var (
-	difficulty = 8
+	difficulty = 12
 	maxNonce uint64 = math.MaxUint64
 )
 
@@ -77,7 +76,6 @@ func (pow *POW) Run() (nonce uint64, hash []byte) {
 func (pow *POW) Validate() bool {
 	var hashInt big.Int
 	data := pow.prepareData(pow.block.Header.Nonce)
-	fmt.Printf("%x\n", data)
 	hash := pow.hash(data)
 	hashInt.SetBytes(hash)
 	if hashInt.Cmp(pow.target) == -1 {

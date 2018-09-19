@@ -43,6 +43,10 @@ func GetBlockChainService() *BlockChainService {
 	return blockChainService
 }
 
+func (s *BlockChainService) GetTransChannel() chan<- *blockchain.Transaction {
+	return s.signalSendTransaction
+}
+
 func (s *BlockChainService) Messages() []messages.MessageHandler {
 	return []messages.MessageHandler{
 		{
