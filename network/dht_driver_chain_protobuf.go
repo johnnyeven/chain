@@ -12,23 +12,30 @@ import (
 	"github.com/marpie/goguid"
 )
 
+const TransactionExpiredTime = 2 * time.Minute
+
 var _ interface {
 	dht.TransportDriver
 } = (*ChainProtobufClient)(nil)
 
 type ChainProtobufClient struct {
-	conn  *net.TCPConn
-	table *dht.DistributedHashTable
+	conn      *net.TCPConn
+	transport *dht.Transport
+	peer      *Peer
 }
 
-func NewChainProtobufTransport(table *dht.DistributedHashTable, conn net.Conn, maxCursor uint64) *dht.Transport {
+func NewChainProtobufTransport(conn net.Conn, maxCursor uint64) *dht.Transport {
 	transport := &dht.Transport{}
-	transport.Init(table, &ChainProtobufClient{
-		table: table,
-		conn:  conn.(*net.TCPConn),
+	transport.Init(nil, &ChainProtobufClient{
+		conn:      conn.(*net.TCPConn),
+		transport: transport,
 	}, maxCursor)
 
 	return transport
+}
+
+func (c *ChainProtobufClient) GetPeer() *Peer {
+	return c.peer
 }
 
 func (c *ChainProtobufClient) Read(b []byte) (n int, err error) {
@@ -121,30 +128,29 @@ func (c *ChainProtobufClient) Request(request *dht.Request) {}
 
 func (c *ChainProtobufClient) SendRequest(request *dht.Request, retry int) {
 	tranID := request.Data.(*messages.Message).MessageID
-	tran := c.table.GetTransport().NewTransaction(tranID, request, retry)
-	c.table.GetTransport().InsertTransaction(tran)
-	defer c.table.GetTransport().DeleteTransaction(tran.ID)
+	tran := c.transport.NewTransaction(tranID, request, retry)
+	c.transport.InsertTransaction(tran)
+	defer c.transport.DeleteTransaction(tran.ID)
 
-	success := false
+	response := false
+
+	err := c.Send(request)
+	if err != nil {
+		logrus.Warningf("[ChainProtobufClient].Request c.Send err: %v", err)
+	}
 Run:
-	for i := 0; i < retry; i++ {
-		logrus.Debugf("[ProtobufClient].Request c.conn.WriteToUDP try %d", i+1)
-		err := c.Send(request)
-		if err != nil {
-			logrus.Warningf("[KRPCClient].Request c.conn.WriteToUDP err: %v", err)
-			break
-		}
-
+	for {
 		select {
 		case <-tran.ResponseChannel:
-			success = true
+			response = true
 			break Run
-		case <-time.After(time.Second * 15):
+		case <-time.After(TransactionExpiredTime):
+			break Run
 		}
 	}
 
-	if !success {
-		c.table.GetRoutingTable().RemoveByAddr(request.RemoteAddr.String())
+	if !response {
+		logrus.Warningf("[ChainProtobufClient] response timeout, tranID: %d", tranID)
 	}
 }
 

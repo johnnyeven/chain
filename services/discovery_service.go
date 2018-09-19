@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"git.profzone.net/profzone/chain/network"
+	"github.com/sirupsen/logrus"
 )
 
 var _ interface {
@@ -46,8 +47,25 @@ func (s *DiscoveryService) Stop() error {
 }
 
 func (s *DiscoveryService) RunHelloTCP(t *dht.Transport, msg *messages.Message) error {
-	//peer := p2p.GetPeerManager().Get(msg.PeerID)
-	//peer.TCPClient = conn.(*net.TCPConn)
+
+	payload := &messages.HelloTCP{}
+	err := payload.DecodeFromSource(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	node, err := dht.NewNodeFromCompactInfo(string(payload.Node), "udp4")
+	if err != nil {
+		return err
+	}
+
+	p := t.GetClient().(*network.ChainProtobufClient).GetPeer()
+	p.Node = node
+	p.Guid = payload.Guid
+
+	network.P2P.GetPeerManager().Set(p)
+
+	logrus.Infof("peer handshake, peerID: %x", p.Guid)
 
 	return nil
 }
@@ -75,7 +93,7 @@ func (s *DiscoveryService) RunFindNode(t *dht.Transport, msg *messages.Message) 
 		Version: global.Config.Version,
 		//Ip:      network.P2P.AnnouncedAddr.IP,
 		//Port:    uint32(network.P2P.AnnouncedAddr.Port),
-		Nodes:   []byte(nodes),
+		Nodes: []byte(nodes),
 	}
 
 	request := t.MakeResponse(nil, msg.RemoteAddr, msg.MessageID, message)
@@ -86,11 +104,7 @@ func (s *DiscoveryService) RunFindNode(t *dht.Transport, msg *messages.Message) 
 	}
 
 	n, _ := dht.NewNode(string(payload.Guid), msg.RemoteAddr.Network(), msg.RemoteAddr.String())
-	if t.GetDHT().GetRoutingTable().Insert(n) {
-		if t.GetDHT().NewNodeHandler != nil {
-			t.GetDHT().NewNodeHandler(n)
-		}
-	}
+	t.GetDHT().GetRoutingTable().Insert(n)
 
 	return nil
 }
@@ -115,10 +129,10 @@ func (s *DiscoveryService) RunFindNodeAck(t *dht.Transport, msg *messages.Messag
 
 	guid := payload.Guid
 
-	if tran.ClientID.(*dht.Identity) != nil && tran.ClientID.(*dht.Identity).RawString() != string(guid) {
-		t.GetDHT().GetRoutingTable().RemoveByAddr(msg.RemoteAddr.String())
-		return nil
-	}
+	//if tran.ClientID.(*dht.Identity) != nil && tran.ClientID.(*dht.Identity).RawString() != string(guid) {
+	//	t.GetDHT().GetRoutingTable().RemoveByAddr(msg.RemoteAddr.String())
+	//	return nil
+	//}
 
 	node, err := dht.NewNode(string(guid), msg.RemoteAddr.Network(), msg.RemoteAddr.String())
 	if err != nil {
@@ -135,7 +149,7 @@ func (s *DiscoveryService) RunFindNodeAck(t *dht.Transport, msg *messages.Messag
 
 	if t.GetDHT().GetRoutingTable().Insert(node) {
 		if t.GetDHT().NewNodeHandler != nil {
-			t.GetDHT().NewNodeHandler(node)
+			t.GetDHT().NewNodeHandler(msg.PeerID, node)
 		}
 	}
 
@@ -158,9 +172,6 @@ func findOrContinueRequestTarget(table *dht.DistributedHashTable, targetID []byt
 
 		if table.GetRoutingTable().Insert(node) {
 			hasNew = true
-			if table.NewNodeHandler != nil {
-				table.NewNodeHandler(node)
-			}
 		}
 	}
 	if found || !hasNew {

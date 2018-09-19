@@ -5,6 +5,8 @@ import (
 	"git.profzone.net/profzone/chain/messages"
 	"git.profzone.net/profzone/chain/global"
 	"git.profzone.net/profzone/terra/dht"
+	"git.profzone.net/profzone/chain/network"
+	"github.com/sirupsen/logrus"
 )
 
 var _ interface {
@@ -90,212 +92,198 @@ func (s *BlockChainService) Stop() error {
 }
 
 func (s *BlockChainService) RunRequestHeight(t *dht.Transport, msg *messages.Message) error {
-	//payload := &messages.RequestHeight{}
-	//err := payload.DecodeFromSource(msg.Message)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//pm := p2p.GetPeerManager()
-	//currentHeight := s.c.GetBestHeight()
-	//if payload.Height > currentHeight {
-	//	// 对方区块比我方更新，请求对方的区块
-	//	message := &messages.RequestHeight{
-	//		Height:  currentHeight,
-	//		Version: pm.Version,
-	//	}
-	//	err := messages.SendMessage(conn, msg.PeerID, message)
-	//	if err != nil {
-	//		logrus.Errorf("RunRequestHeight send RequestHeight err: %v", err)
-	//		return err
-	//	}
-	//} else if payload.Height < currentHeight {
-	//	// 我方区块比对方更新，发送给对方缺失的区块哈希
-	//	blockHashes := make([][]byte, 0)
-	//	it := s.c.Iterator()
-	//
-	//	// TODO 优化算法，不用遍历整条链
-	//	for {
-	//		block := it.Next()
-	//		if block == nil {
-	//			break
-	//		}
-	//
-	//		if block.Header.Height >= payload.Height {
-	//			blockHashes = append(blockHashes, block.Header.Hash)
-	//		}
-	//
-	//		if block.Header.PrevBlockHash == nil || len(block.Header.PrevBlockHash) == 0 {
-	//			break
-	//		}
-	//	}
-	//	message := &messages.BlocksHash{
-	//		Hashes: blockHashes,
-	//	}
-	//	err := messages.SendMessage(conn, msg.PeerID, message)
-	//	if err != nil {
-	//		logrus.Errorf("RunRequestHeight send BlocksHash err: %v", err)
-	//		return err
-	//	}
-	//}
+
+	payload := &messages.RequestHeight{}
+	err := payload.DecodeFromSource(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	peer := t.GetClient().(*network.ChainProtobufClient).GetPeer()
+	currentHeight := s.c.GetBestHeight()
+	if payload.Height > currentHeight {
+
+		// 对方区块比我方更新，请求对方的区块
+		message := &messages.RequestHeight{
+			Height:  currentHeight,
+			Version: global.Config.Version,
+		}
+		request := t.MakeResponse(peer.Guid, peer.Node.Addr, msg.MessageID, message)
+		t.Request(request)
+
+	} else if payload.Height < currentHeight {
+
+		// 我方区块比对方更新，发送给对方缺失的区块哈希
+		blockHashes := make([][]byte, 0)
+		it := s.c.Iterator()
+
+		// TODO 优化算法，不用遍历整条链
+		for {
+			block := it.Next()
+			if block == nil {
+				break
+			}
+
+			if block.Header.Height >= payload.Height {
+				blockHashes = append(blockHashes, block.Header.Hash)
+			}
+
+			if block.Header.PrevBlockHash == nil || len(block.Header.PrevBlockHash) == 0 {
+				break
+			}
+		}
+		message := &messages.BlocksHash{
+			Hashes: blockHashes,
+		}
+		request := t.MakeResponse(peer.Guid, peer.Node.Addr, msg.MessageID, message)
+		t.Request(request)
+	}
 
 	return nil
 }
 
 func (s *BlockChainService) RunBlocksHash(t *dht.Transport, msg *messages.Message) error {
-	//payload := &messages.BlocksHash{}
-	//err := payload.DecodeFromSource(msg.Message)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//for _, hash := range payload.Hashes {
-	//	blockExist := s.c.GetBlock(hash)
-	//	if blockExist != nil {
-	//		continue
-	//	}
-	//	message := &messages.GetBlock{
-	//		Hash: hash,
-	//	}
-	//	err := messages.SendMessage(conn, msg.PeerID, message)
-	//	if err != nil {
-	//		logrus.Errorf("RunBlocksHash send GetBlock err: %v", err)
-	//		return err
-	//	}
-	//}
+
+	payload := &messages.BlocksHash{}
+	err := payload.DecodeFromSource(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	peer := t.GetClient().(*network.ChainProtobufClient).GetPeer()
+	for _, hash := range payload.Hashes {
+
+		blockExist := s.c.GetBlock(hash)
+		if blockExist != nil {
+			continue
+		}
+		message := &messages.GetBlock{
+			Hash: hash,
+		}
+		request := t.MakeRequest(peer.Guid, peer.Node.Addr, "", message)
+		t.Request(request)
+
+	}
 
 	return nil
 }
 
 func (s *BlockChainService) RunGetBlock(t *dht.Transport, msg *messages.Message) error {
-	//payload := &messages.GetBlock{}
-	//err := payload.DecodeFromSource(msg.Message)
-	//if err != nil {
-	//	logrus.Errorf("RunGetBlock payload.DecodeFromSource err: %v", err)
-	//	return err
-	//}
-	//
-	//block := s.c.GetBlock(payload.Hash)
-	//message := &messages.GetBlockAck{
-	//	Block: block.Serialize(),
-	//}
-	//err = messages.SendMessage(conn, msg.PeerID, message)
-	//if err != nil {
-	//	logrus.Errorf("RunBlocksHash send GetBlock err: %v", err)
-	//	return err
-	//}
+
+	payload := &messages.GetBlock{}
+	err := payload.DecodeFromSource(msg.Payload)
+	if err != nil {
+		logrus.Errorf("[RunGetBlock] payload.DecodeFromSource err: %v", err)
+		return err
+	}
+
+	block := s.c.GetBlock(payload.Hash)
+	message := &messages.GetBlockAck{
+		Block: block.Serialize(),
+	}
+
+	peer := t.GetClient().(*network.ChainProtobufClient).GetPeer()
+	request := t.MakeResponse(peer.Guid, peer.Node.Addr, msg.MessageID, message)
+	t.Request(request)
 
 	return nil
 }
 
 func (s *BlockChainService) RunGetBlockAck(t *dht.Transport, msg *messages.Message) error {
-	//payload := &messages.GetBlockAck{}
-	//err := payload.DecodeFromSource(msg.Message)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//block := blockchain.DeserializeBlock(payload.Block)
-	//logrus.Infof("Received a new block: %x", block.Header.Hash)
-	//
-	//s.c.AddBlock(block)
-	//chainState := blockchain.ChainState{BlockChain: s.c}
-	//chainState.Update(block)
-	//
-	//BroadcastBlock(block)
+
+	payload := &messages.GetBlockAck{}
+	err := payload.DecodeFromSource(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	block := blockchain.DeserializeBlock(payload.Block)
+	logrus.Infof("Received a new block: %x", block.Header.Hash)
+
+	s.c.AddBlock(block)
+	chainState := blockchain.ChainState{BlockChain: s.c}
+	chainState.Update(block)
+
+	BroadcastBlock(block, msg)
 
 	return nil
 }
 
 func (s *BlockChainService) RunNewTransaction(t *dht.Transport, msg *messages.Message) error {
-	//payload := &messages.NewTransaction{}
-	//err := payload.DecodeFromSource(msg.Message)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//tran := blockchain.DeserializeTransaction(payload.Transaction)
-	//
-	//go func() {
-	//	trans := make(blockchain.TransactionContainer, 0)
-	//	trans = append(trans, tran)
-	//	trans = append(trans, blockchain.NewCoinbaseTransaction(global.Config.ReceiveAddress, ""))
-	//
-	//	for _, tran := range trans {
-	//		if !blockchain.VerifyTransaction(s.c, &tran) {
-	//			logrus.Panicf("invalid transaction: %s", tran.ID)
-	//		}
-	//	}
-	//	block := s.c.PackageBlock(trans.Serialize())
-	//	BroadcastBlock(block)
-	//}()
+
+	payload := &messages.NewTransaction{}
+	err := payload.DecodeFromSource(msg.Payload)
+	if err != nil {
+		return err
+	}
+
+	tran := blockchain.DeserializeTransaction(payload.Transaction)
+
+	go func() {
+		trans := make(blockchain.TransactionContainer, 0)
+		trans = append(trans, tran)
+		trans = append(trans, blockchain.NewCoinbaseTransaction(global.Config.ReceiveAddress, ""))
+
+		for _, tran := range trans {
+			if !blockchain.VerifyTransaction(s.c, &tran) {
+				logrus.Warningf("invalid transaction: %s", tran.ID)
+			}
+		}
+		block := s.c.PackageBlock(trans.Serialize())
+		BroadcastBlock(block, msg)
+	}()
 
 	return nil
 }
 
-func BroadcastBlock(block *blockchain.Block) {
-	//pm := p2p.GetPeerManager()
-	//pm.Iterator(func(i int64, peer *p2p.Peer) error {
-	//	if peer.TCPClient == nil {
-	//		return nil
-	//	}
-	//
-	//	message := &messages.BlocksHash{
-	//		Hashes: [][]byte{block.Header.Hash},
-	//	}
-	//	err := messages.SendMessage(peer.TCPClient, peer.Guid, message)
-	//	if err != nil {
-	//		logrus.Errorf("BroadcastBlock send BlocksHash err: %v", err)
-	//		return err
-	//	}
-	//
-	//	return nil
-	//}, false)
+func BroadcastBlock(block *blockchain.Block, msg *messages.Message) {
+	network.P2P.GetPeerManager().Iterator(func(peer *network.Peer) error {
+
+		message := &messages.BlocksHash{
+			Hashes: [][]byte{block.Header.Hash},
+		}
+		t := peer.GetTransport()
+		request := t.MakeResponse(peer.Guid, peer.Node.Addr, msg.MessageID, message)
+		t.Request(request)
+
+		return nil
+
+	}, true)
 }
 
 func BroadcastTran(tran *blockchain.Transaction) {
-	//pm := p2p.GetPeerManager()
-	//pm.Iterator(func(i int64, peer *p2p.Peer) error {
-	//	if peer.TCPClient == nil {
-	//		return nil
-	//	}
-	//
-	//	message := &messages.NewTransaction{
-	//		Transaction: tran.Serialize(),
-	//	}
-	//	err := messages.SendMessage(peer.TCPClient, peer.Guid, message)
-	//	if err != nil {
-	//		logrus.Errorf("BroadcastTran err: %v", err)
-	//		return err
-	//	}
-	//
-	//	return nil
-	//}, false)
+	network.P2P.GetPeerManager().Iterator(func(peer *network.Peer) error {
+
+		message := &messages.NewTransaction{
+			Transaction: tran.Serialize(),
+		}
+		t := peer.GetTransport()
+		request := t.MakeRequest(peer.Guid, peer.Node.Addr, "", message)
+		t.Request(request)
+
+		return nil
+
+	}, true)
 }
 
 func RequestHeight(c *blockchain.BlockChain, height uint64) {
-	//pm := p2p.GetPeerManager()
-	//pm.Iterator(func(i int64, peer *p2p.Peer) error {
-	//	if peer.TCPClient == nil {
-	//		return nil
-	//	}
-	//
-	//	if height == 0 {
-	//		height = c.GetBestHeight()
-	//	}
-	//
-	//	message := &messages.RequestHeight{
-	//		Height:  height,
-	//		Version: pm.Version,
-	//	}
-	//	err := messages.SendMessage(peer.TCPClient, peer.Guid, message)
-	//	if err != nil {
-	//		logrus.Errorf("RequestHeight err: %v", err)
-	//		return err
-	//	}
-	//
-	//	return nil
-	//}, false)
+	network.P2P.GetPeerManager().Iterator(func(peer *network.Peer) error {
+
+		if height == 0 {
+			height = c.GetBestHeight()
+		}
+
+		message := &messages.RequestHeight{
+			Height:  height,
+			Version: global.Config.Version,
+		}
+		t := peer.GetTransport()
+		request := t.MakeRequest(peer.Guid, peer.Node.Addr, "", message)
+		t.Request(request)
+
+		return nil
+
+	}, true)
 }
 
 func RequestHeightTask() {

@@ -18,13 +18,6 @@ func DHTPacketHandler(table *dht.DistributedHashTable, packet dht.Packet) {
 		return
 	}
 
-	//pm := GetPeerManager()
-	//peer := pm.Get(msg.PeerID)
-	//if peer != nil && peer.TCPClient == nil {
-	//	if conn, ok := conn.(*net.TCPConn); ok {
-	//		peer.TCPClient = conn
-	//	}
-	//}
 	logrus.Debug("[DHTPacketHandler] Handle message [MsgHeader=", msg.Header.String(), ", MsgID=", msg.MessageID, "] started")
 
 	err := runner(table.GetTransport(), msg)
@@ -35,8 +28,12 @@ func DHTPacketHandler(table *dht.DistributedHashTable, packet dht.Packet) {
 	logrus.Debug("[DHTPacketHandler] Handle message [MsgHeader=", msg.Header.String(), ", MsgID=", msg.MessageID, "] ended")
 }
 
-func NewNodeHandler(node *dht.Node) {
+func NewNodeHandler(peerID []byte, node *dht.Node) {
 	logrus.Infof("new node recorded, id: %x, ip: %s, port: %d", []byte(node.ID.RawString()), node.Addr.IP.String(), node.Addr.Port)
+
+	if P2P.peerManager.Has(peerID) {
+		return
+	}
 
 	remote := net.JoinHostPort(node.Addr.IP.String(), strconv.FormatUint(uint64(node.Addr.Port), 10))
 	conn, err := net.DialTimeout("tcp", remote, 10*time.Second)
@@ -44,7 +41,9 @@ func NewNodeHandler(node *dht.Node) {
 		logrus.Errorf("[NewNodeHandler] net.DialTimeout error: %v", err)
 	}
 
-	p := NewPeerWithConnection(node.ID.RawData(), conn.(*net.TCPConn))
-	//TODO p.Run() to start receiving request
+	p := NewPeerWithConnection(peerID, node, conn.(*net.TCPConn))
 	P2P.peerManager.Set(p)
+	logrus.Infof("new peer connect id: %x, address: %s", p.Guid, conn.RemoteAddr().String())
+
+	p.Handshake()
 }

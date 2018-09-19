@@ -75,8 +75,8 @@ func (s *Server) listen() {
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
-	NewPeerWithConnection(nil, conn.(*net.TCPConn))
-	//TODO p.Run() to start receiving request, first will received Hello_tcp command
+	p := NewPeerWithConnection(nil, nil, conn.(*net.TCPConn))
+	logrus.Infof("new peer connected id: %x, address: %s", p.Guid, conn.RemoteAddr().String())
 }
 
 func (s *Server) Run() {
@@ -98,4 +98,8 @@ func (s *Server) Close() {
 	s.quitChannel <- struct{}{}
 	s.dht.Close()
 	close(s.quitChannel)
+}
+
+func (s *Server) GetPeerManager() *PeerManager {
+	return s.peerManager
 }
