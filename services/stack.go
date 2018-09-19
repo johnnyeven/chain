@@ -3,7 +3,7 @@ package services
 import (
 	"reflect"
 	"fmt"
-	"git.profzone.net/profzone/chain/messages"
+	"github.com/profzone/chain/messages"
 )
 
 type Stack struct {

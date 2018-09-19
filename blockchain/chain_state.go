@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/hex"
-	"git.profzone.net/profzone/chain/global"
+	"github.com/profzone/chain/global"
 )
 
 type ChainState struct {

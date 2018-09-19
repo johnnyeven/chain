@@ -15,7 +15,7 @@
 package main
 
 import (
-	"git.profzone.net/profzone/chain/cmd"
+	"github.com/profzone/chain/cmd"
 	"github.com/sirupsen/logrus"
 	"os"
 	"bufio"

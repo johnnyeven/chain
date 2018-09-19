@@ -2,10 +2,10 @@ package services
 
 import (
 	"github.com/marpie/goguid"
-	"git.profzone.net/profzone/chain/messages"
-	"git.profzone.net/profzone/chain/global"
-	"git.profzone.net/profzone/terra/dht"
-	"git.profzone.net/profzone/chain/network"
+	"github.com/profzone/chain/messages"
+	"github.com/profzone/chain/global"
+	"github.com/profzone/terra/dht"
+	"github.com/profzone/chain/network"
 )
 
 var _ interface {

@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"math"
 	"net"
-	"git.profzone.net/profzone/terra/dht/util"
+	"github.com/profzone/terra/dht/util"
 )
 
 var ConfigFileGroup = ""

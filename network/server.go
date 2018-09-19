@@ -2,8 +2,8 @@ package network
 
 import (
 	"net"
-	"git.profzone.net/profzone/terra/dht"
-	"git.profzone.net/profzone/chain/global"
+	"github.com/profzone/terra/dht"
+	"github.com/profzone/chain/global"
 	"github.com/sirupsen/logrus"
 )
 

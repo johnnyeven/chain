@@ -1,9 +1,9 @@
 package network
 
 import (
-	"git.profzone.net/profzone/terra/dht"
-	"git.profzone.net/profzone/chain/messages"
-	"git.profzone.net/profzone/chain/global"
+	"github.com/profzone/terra/dht"
+	"github.com/profzone/chain/messages"
+	"github.com/profzone/chain/global"
 )
 
 func Ping(node *dht.Node, t *dht.Transport) {

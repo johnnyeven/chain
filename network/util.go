@@ -1,9 +1,9 @@
 package network
 
 import (
-	"git.profzone.net/profzone/chain/messages"
+	"github.com/profzone/chain/messages"
 	"net"
-	"git.profzone.net/profzone/chain/global"
+	"github.com/profzone/chain/global"
 	"encoding/binary"
 	"encoding/gob"
 	"bytes"

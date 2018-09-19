@@ -1,13 +1,13 @@
 package services
 
 import (
-	"git.profzone.net/profzone/chain/messages"
-	"git.profzone.net/profzone/chain/global"
-	"git.profzone.net/profzone/terra/dht"
+	"github.com/profzone/chain/messages"
+	"github.com/profzone/chain/global"
+	"github.com/profzone/terra/dht"
 	"bytes"
 	"errors"
 	"strings"
-	"git.profzone.net/profzone/chain/network"
+	"github.com/profzone/chain/network"
 	"github.com/sirupsen/logrus"
 )
 

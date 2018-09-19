@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"strconv"
-	"git.profzone.net/profzone/chain/blockchain"
+	"github.com/profzone/chain/blockchain"
 )
 
 // browseChainCmd represents the browseChain command

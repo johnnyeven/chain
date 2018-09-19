@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"git.profzone.net/profzone/chain/blockchain"
+	"github.com/profzone/chain/blockchain"
 )
 
 // chainStateReindexCmd represents the chainStateReindex command

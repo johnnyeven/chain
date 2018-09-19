@@ -1,9 +1,9 @@
 package network
 
 import (
-	"git.profzone.net/profzone/terra/dht"
+	"github.com/profzone/terra/dht"
 	"github.com/sirupsen/logrus"
-	"git.profzone.net/profzone/chain/messages"
+	"github.com/profzone/chain/messages"
 	"net"
 	"strconv"
 	"time"

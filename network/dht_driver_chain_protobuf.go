@@ -2,12 +2,12 @@ package network
 
 import (
 	"net"
-	"git.profzone.net/profzone/terra/dht"
+	"github.com/profzone/terra/dht"
 	"time"
-	"git.profzone.net/profzone/chain/messages"
+	"github.com/profzone/chain/messages"
 	"github.com/sirupsen/logrus"
 	"reflect"
-	"git.profzone.net/profzone/chain/global"
+	"github.com/profzone/chain/global"
 	"io"
 	"github.com/marpie/goguid"
 )

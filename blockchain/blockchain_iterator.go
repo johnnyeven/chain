@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"github.com/boltdb/bolt"
-	"git.profzone.net/profzone/chain/global"
+	"github.com/profzone/chain/global"
 )
 
 type BlockChainIterator struct {
