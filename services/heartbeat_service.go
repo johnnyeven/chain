@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/marpie/goguid"
 	"github.com/johnnyeven/chain/messages"
 	"github.com/johnnyeven/chain/global"
 	"github.com/johnnyeven/terra/dht"
@@ -52,7 +51,7 @@ func (s *HeartbeatService) RunHeartbeat(t *dht.Transport, msg *messages.Message)
 	}
 
 	peer := t.GetClient().(*network.ChainProtobufClient).GetPeer()
-	request := t.MakeRequest(peer.Guid, peer.Node.Addr, "", ack)
+	request := t.MakeResponse(peer.Guid, peer.Node.Addr, msg.MessageID, ack)
 	t.Request(request)
 
 	return nil
@@ -66,26 +65,8 @@ func (s *HeartbeatService) RunHeartbeatAck(t *dht.Transport, msg *messages.Messa
 		return err
 	}
 
-	//peer := t.GetClient().(*network.ChainProtobufClient).GetPeer()
-	//peer.Heartbeat.ResponseMessage(payload.Sequence)
+	peer := t.GetClient().(*network.ChainProtobufClient).GetPeer()
+	peer.Heartbeat.ResponseMessage(payload.Sequence)
 
 	return nil
-}
-
-func CheckHeartbeatAction() {
-	network.P2P.GetPeerManager().Iterator(func(peer *network.Peer) error {
-
-		sequence := guid.GetGUID()
-		message := &messages.Heartbeat{
-			Sequence: sequence,
-		}
-		t := peer.GetTransport()
-		request := t.MakeRequest(peer.Guid, peer.Node.Addr, "", message)
-		t.Request(request)
-
-		//peer.Heartbeat.NewMessage(sequence)
-
-		return nil
-
-	}, true)
 }

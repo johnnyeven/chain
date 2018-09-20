@@ -32,6 +32,8 @@ var Config = &struct {
 	NodeExpriedAfter time.Duration
 	// how long it checks whether the bucket is expired
 	CheckBucketPeriod time.Duration
+
+	CheckPeerPeriod time.Duration
 	// the max transaction id
 	MaxTransactionCursor uint64
 	// how many nodes routing table can hold
@@ -212,6 +214,17 @@ func checkFirstRunDHTConfig(bucket *bolt.Bucket) {
 		Config.CheckBucketPeriod = d
 	} else {
 		Config.CheckBucketPeriod = 0
+	}
+
+	checkPeerPeriod := viper.GetString("PEER_CHECK_PEER_PERIOD")
+	if checkPeerPeriod != "" {
+		d, err := time.ParseDuration(checkPeerPeriod)
+		if err != nil {
+			logrus.Panicf("PEER_CHECK_PEER_PERIOD parse error: %v", err)
+		}
+		Config.CheckPeerPeriod = d
+	} else {
+		Config.CheckPeerPeriod = 0
 	}
 
 	maxTransactionCursor := viper.GetInt64("DHT_MAX_TRANSACTION_CURSOR")
