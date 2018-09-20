@@ -166,8 +166,10 @@ func (c *ChainProtobufClient) Send(request *dht.Request) error {
 }
 
 func (c *ChainProtobufClient) Receive(receiveChannel chan dht.Packet) {
-	readedUDPMessage := make(chan *messages.Message)
-	go c.handleDeserializeData(readedUDPMessage, receiveChannel, c.conn)
+	readMessage := make(chan *messages.Message)
+	go c.handleDeserializeData(readMessage, receiveChannel, c.conn)
+
+	truncatedData := make([]byte, 0)
 	for {
 		buffer := make([]byte, 8192)
 		count, err := c.conn.Read(buffer)
@@ -181,13 +183,13 @@ func (c *ChainProtobufClient) Receive(receiveChannel chan dht.Packet) {
 		if count == 0 {
 			continue
 		}
-		unpackMessage(buffer[:count], readedUDPMessage, c.conn.RemoteAddr())
+		truncatedData = unpackMessage(append(truncatedData, buffer[:count]...), readMessage, c.conn.RemoteAddr())
 	}
 }
 
-func (c *ChainProtobufClient) handleDeserializeData(readedMessage <-chan *messages.Message, receiveChannel chan dht.Packet, conn net.Conn) {
+func (c *ChainProtobufClient) handleDeserializeData(readMessage <-chan *messages.Message, receiveChannel chan<- dht.Packet, conn net.Conn) {
 	for {
-		msg, isOpened := <-readedMessage
+		msg, isOpened := <-readMessage
 		if !isOpened || msg == nil {
 			break
 		}

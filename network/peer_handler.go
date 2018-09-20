@@ -8,12 +8,7 @@ import (
 
 func PeerPacketHandler(p *Peer, packet dht.Packet) {
 	msg := unpackMessageFromPackage(packet.Data)
-	runner, ok := messages.GetMessageManager().GetMessageRunner(msg.Header)
-
-	if !ok {
-		logrus.Errorf("[PeerPacketHandler] handleDeserializeData err MsgHeader: %d", msg.Header)
-		return
-	}
+	runner := messages.GetMessageManager().GetMessageRunner(msg.Header)
 
 	logrus.Debug("[PeerPacketHandler] Handle message [MsgHeader=", msg.Header.String(), ", MsgID=", msg.MessageID, "] started")
 

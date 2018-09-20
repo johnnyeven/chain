@@ -53,7 +53,7 @@ func unpackMessage(source []byte, readedMessage chan *messages.Message, remoteAd
 	var i uint32
 	for i = 0; i < uint32(length); i = i + 1 {
 		// 获取包长信息
-		data := source[0:global.HeaderLength]
+		data := source[i : i+global.HeaderLength]
 		packageLength := binary.BigEndian.Uint32(data)
 
 		// 获取包数据
@@ -67,14 +67,13 @@ func unpackMessage(source []byte, readedMessage chan *messages.Message, remoteAd
 		decoder := gob.NewDecoder(bytes.NewReader(packageData))
 		err := decoder.Decode(&msg)
 		if err != nil {
-			logrus.Panic(err)
+			logrus.Errorf("unpackMessage error: %v", err)
+		} else {
+			if remoteAddr != nil {
+				msg.RemoteAddr = remoteAddr
+			}
+			readedMessage <- &msg
 		}
-
-		if remoteAddr != nil {
-			msg.RemoteAddr = remoteAddr
-		}
-
-		readedMessage <- &msg
 		i += global.HeaderLength + packageLength - 1
 	}
 
@@ -83,4 +82,3 @@ func unpackMessage(source []byte, readedMessage chan *messages.Message, remoteAd
 	}
 	return source[i:]
 }
-

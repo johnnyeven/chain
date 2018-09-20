@@ -11,12 +11,7 @@ import (
 
 func DHTPacketHandler(table *dht.DistributedHashTable, packet dht.Packet) {
 	msg := unpackMessageFromPackage(packet.Data)
-	runner, ok := messages.GetMessageManager().GetMessageRunner(msg.Header)
-
-	if !ok {
-		logrus.Errorf("[DHTPacketHandler] handleDeserializeData err MsgHeader: %d", msg.Header)
-		return
-	}
+	runner := messages.GetMessageManager().GetMessageRunner(msg.Header)
 
 	logrus.Debug("[DHTPacketHandler] Handle message [MsgHeader=", msg.Header.String(), ", MsgID=", msg.MessageID, "] started")
 

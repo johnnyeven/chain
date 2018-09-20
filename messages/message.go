@@ -58,7 +58,10 @@ func (m *MessageManager) RegisterMessage(handler MessageHandler) {
 	m.messageMap.Set(handler.Type, handler.Runner)
 }
 
-func (m *MessageManager) GetMessageRunner(messageType global.MessageType) (MessageRunner, bool) {
+func (m *MessageManager) GetMessageRunner(messageType global.MessageType) MessageRunner {
 	v, ok := m.messageMap.Get(messageType)
-	return v.(MessageRunner), ok
+	if !ok {
+		logrus.Panicf("[GetMessageRunner] error: not found MessageType: %s", messageType.String())
+	}
+	return v.(MessageRunner)
 }

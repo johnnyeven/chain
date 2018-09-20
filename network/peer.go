@@ -116,6 +116,6 @@ func (h *Heartbeat) ResponseMessage(sequence int64) {
 		d := time.Since(startTime)
 		h.Delay = d.Seconds() * 1000.0
 		delete(h.messageList, sequence)
-		logrus.Infof("Heartbeat ack: %s, Milliseconds: %.2f", d.String(), d.Seconds()*1000.0)
+		logrus.Debugf("Heartbeat ack: %s, Milliseconds: %.2f", d.String(), d.Seconds()*1000.0)
 	}
 }
