@@ -29,7 +29,9 @@ var getBalanceCmd = &cobra.Command{
 	Use:   "getBalance",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := blockchain.NewBlockChain()
+		c := blockchain.NewBlockChain(blockchain.Config{
+			NewGenesisBlockFunc: blockchain.NewGenesisBlock,
+		})
 		chainState := blockchain.ChainState{c}
 
 		wallets, err := blockchain.NewWalletManager()

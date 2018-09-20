@@ -31,7 +31,9 @@ var sendTransactionCmd = &cobra.Command{
 	Use:   "sendTransaction",
 	Short: "A brief description of your command",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := blockchain.NewBlockChain()
+		c := blockchain.NewBlockChain(blockchain.Config{
+			NewGenesisBlockFunc: blockchain.NewGenesisBlock,
+		})
 
 		tran := blockchain.NewTransaction(from, to, amount, c)
 

@@ -211,9 +211,12 @@ func (tx *Transaction) TrimmedCopy() *Transaction {
 	return &Transaction{tx.ID, inputs, outputs}
 }
 
-func newGenesisBlock(coinbase Transaction) *Block {
+func NewGenesisBlock(to string, data string) *Block {
+
+	tran := NewCoinbaseTransaction(to, data)
+
 	trans := make(TransactionContainer, 0)
-	trans = append(trans, coinbase)
+	trans = append(trans, tran)
 	return NewBlock(trans.Serialize(), []byte{}, 0)
 }
 

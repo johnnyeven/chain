@@ -38,13 +38,9 @@ func NewPeerWithConnection(id []byte, node *dht.Node, conn *net.TCPConn) *Peer {
 	return p
 }
 
-func (p *Peer) listen() {
-	go p.transport.Receive(p.packetChannel)
-}
-
 func (p *Peer) Run() {
 	go p.transport.Run()
-	p.listen()
+	go p.transport.Receive(p.packetChannel)
 
 	tick := time.Tick(global.Config.CheckPeerPeriod)
 
@@ -84,6 +80,17 @@ func (p *Peer) Ping() {
 	t.Request(request)
 
 	p.Heartbeat.NewMessage(sequence)
+}
+
+func (p *Peer) Close() {
+	p.quitChannel <- struct{}{}
+	p.transport.Close()
+	close(p.packetChannel)
+	close(p.quitChannel)
+
+	if P2P.peerManager.Has(p.Guid) {
+		P2P.peerManager.Delete(p.Guid)
+	}
 }
 
 type Heartbeat struct {

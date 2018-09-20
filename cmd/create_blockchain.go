@@ -30,7 +30,9 @@ var createBlockChainCmd = &cobra.Command{
 		if !blockchain.ValidateAddress(createBlockChainAddress) {
 			logrus.Panicf("not a valid address: %s", createBlockChainAddress)
 		}
-		c := blockchain.InitBlockChain(createBlockChainAddress)
+		c := blockchain.InitBlockChain(createBlockChainAddress, blockchain.Config{
+			NewGenesisBlockFunc: blockchain.NewGenesisBlock,
+		})
 
 		chainState := blockchain.ChainState{
 			BlockChain: c,

@@ -205,8 +205,10 @@ func (s ChainState) Update(block *Block) {
 			if !tran.IsCoinBase() {
 				for _, input := range tran.Inputs {
 					updatedOutputs := make([]Output, 0)
-					serializedOutputs := bucket.Get(input.TransactionID)
 					deserializedOutputs := make([]Output, 0)
+
+					serializedOutputs := bucket.Get(input.TransactionID)
+
 					decoder := gob.NewDecoder(bytes.NewReader(serializedOutputs))
 					err := decoder.Decode(&deserializedOutputs)
 					if err != nil {

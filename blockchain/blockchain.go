@@ -12,6 +12,8 @@ type BlockChain struct {
 	tip []byte
 	// 数据库连接
 	DB *bolt.DB
+
+	NewGenesisBlockFunc func(to string, data string) *Block
 	// 同步锁
 	lock *sync.Mutex
 }
@@ -140,7 +142,7 @@ func (c *BlockChain) GetBlock(blockHash []byte) *Block {
 	return block
 }
 
-func InitBlockChain(address string) *BlockChain {
+func InitBlockChain(address string, config Config) *BlockChain {
 	var (
 		db  *bolt.DB
 		tip []byte
@@ -153,6 +155,11 @@ func InitBlockChain(address string) *BlockChain {
 		if err != nil {
 			logrus.Panicf("InitBlockChain bolt.Open err: %v", err)
 		}
+		GeneralChain = &BlockChain{
+			DB:                  db,
+			NewGenesisBlockFunc: config.NewGenesisBlockFunc,
+			lock:                new(sync.Mutex),
+		}
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {
@@ -162,9 +169,8 @@ func InitBlockChain(address string) *BlockChain {
 			if address == "" {
 				logrus.Panic("chain not initialized")
 			}
-			// TODO 剥离payload相关的代码
-			coinbase := NewCoinbaseTransaction(address, "This is the CoinBase transaction")
-			block := newGenesisBlock(coinbase)
+
+			block := GeneralChain.NewGenesisBlockFunc(address, "This is the CoinBase transaction")
 
 			if bucket == nil {
 				bucket, err = tx.CreateBucket([]byte(global.BlockBucketIdentity))
@@ -195,16 +201,12 @@ func InitBlockChain(address string) *BlockChain {
 		logrus.Panicf("InitBlockChain bucket transaction err: %v", err)
 	}
 
-	GeneralChain = &BlockChain{
-		tip:  tip,
-		DB:   db,
-		lock: new(sync.Mutex),
-	}
+	GeneralChain.tip = tip
 
 	return GeneralChain
 }
 
-func NewBlockChain() *BlockChain {
+func NewBlockChain(config Config) *BlockChain {
 	if GeneralChain != nil {
 		return GeneralChain
 	}
@@ -232,10 +234,15 @@ func NewBlockChain() *BlockChain {
 	}
 
 	GeneralChain = &BlockChain{
-		tip:  tip,
-		DB:   db,
-		lock: new(sync.Mutex),
+		tip:                 tip,
+		DB:                  db,
+		NewGenesisBlockFunc: config.NewGenesisBlockFunc,
+		lock:                new(sync.Mutex),
 	}
 
 	return GeneralChain
+}
+
+type Config struct {
+	NewGenesisBlockFunc func(to string, data string) *Block
 }

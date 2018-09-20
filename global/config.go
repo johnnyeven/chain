@@ -32,8 +32,6 @@ var Config = &struct {
 	NodeExpriedAfter time.Duration
 	// how long it checks whether the bucket is expired
 	CheckBucketPeriod time.Duration
-
-	CheckPeerPeriod time.Duration
 	// the max transaction id
 	MaxTransactionCursor uint64
 	// how many nodes routing table can hold
@@ -46,9 +44,14 @@ var Config = &struct {
 	// the nodes num to be fresh in a bucket
 	RefreshNodeCount int
 	// udp, udp4, udp6
-	Network       string
+	Network string
 	// local network address
-	LocalAddr     *net.UDPAddr
+	LocalAddr *net.UDPAddr
+	// -----------------------------------------------------------------------------------
+
+	// -------------------------------BlockChain Config ----------------------------------
+
+	CheckPeerPeriod     time.Duration
 	// -----------------------------------------------------------------------------------
 }{
 	HeartbeatTaskSpec:     "*/10 * * * * *",

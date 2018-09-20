@@ -7,6 +7,11 @@ import (
 	"github.com/johnnyeven/terra/dht"
 	"github.com/johnnyeven/chain/network"
 	"github.com/sirupsen/logrus"
+	"github.com/boltdb/bolt"
+	"bytes"
+	"encoding/gob"
+	"errors"
+	"fmt"
 )
 
 var _ interface {
@@ -15,8 +20,91 @@ var _ interface {
 
 var blockChainService *BlockChainService
 
+type blockInTransport struct {
+	blocks                   *dht.SyncedMap
+	heightIndexedBlockHashed map[uint64][][]byte
+	sortedHeight             []uint64
+}
+
+func (b *blockInTransport) Get(hash []byte) (*blockchain.Block, bool) {
+	val, ok := b.blocks.Get(string(hash))
+	return val.(*blockchain.Block), ok
+}
+
+func (b *blockInTransport) Has(hash []byte) bool {
+	return b.blocks.Has(string(hash))
+}
+
+func (b *blockInTransport) Set(block *blockchain.Block) {
+	b.blocks.Set(string(block.Header.Hash), block)
+
+	if _, ok := b.heightIndexedBlockHashed[block.Header.Height]; !ok {
+		b.sortedHeight = append(b.sortedHeight, block.Header.Height)
+	}
+	b.heightIndexedBlockHashed[block.Header.Height] = append(b.heightIndexedBlockHashed[block.Header.Height], block.Header.Hash)
+}
+
+func (b *blockInTransport) Delete(hash []byte) {
+	block, blockExist := b.Get(hash)
+
+	if hashes, ok := b.heightIndexedBlockHashed[block.Header.Height]; ok {
+		for i, h := range hashes {
+			if bytes.Compare(hash, h) == 0 {
+				b.heightIndexedBlockHashed[block.Header.Height] = append(b.heightIndexedBlockHashed[block.Header.Height][:i], b.heightIndexedBlockHashed[block.Header.Height][i+1:]...)
+			}
+		}
+	}
+
+	if blockExist {
+		b.blocks.Delete(string(hash))
+	}
+}
+
+func (b *blockInTransport) DeleteMulti(hashes [][]byte) {
+	for _, hash := range hashes {
+		b.Delete(hash)
+	}
+}
+
+func (b *blockInTransport) Clear() {
+	b.blocks.Clear()
+}
+
+func (b *blockInTransport) Iterator(iterator func(block *blockchain.Block) error, errorContinue bool) {
+Run:
+	for _, height := range b.sortedHeight {
+		hashes := b.heightIndexedBlockHashed[height]
+		for _, hash := range hashes {
+			block, ok := b.Get(hash)
+			if ok {
+				err := iterator(block)
+				if err != nil {
+					if errorContinue {
+						continue
+					} else {
+						break Run
+					}
+				}
+			}
+		}
+	}
+}
+
+func (b *blockInTransport) Len() int {
+	return b.blocks.Len()
+}
+
+func newBlockInTransport() *blockInTransport {
+	return &blockInTransport{
+		blocks:                   dht.NewSyncedMap(),
+		heightIndexedBlockHashed: make(map[uint64][][]byte),
+		sortedHeight:             make([]uint64, 0),
+	}
+}
+
 type BlockChainService struct {
 	c                     *blockchain.BlockChain
+	blockInTransport      *blockInTransport
 	signalQuit            chan struct{}
 	signalRequestHeight   chan struct{}
 	signalSendTransaction chan *blockchain.Transaction
@@ -25,7 +113,10 @@ type BlockChainService struct {
 func NewBlockChainService() Service {
 	if blockChainService == nil {
 		blockChainService = &BlockChainService{
-			c:                     blockchain.NewBlockChain(),
+			c: blockchain.NewBlockChain(blockchain.Config{
+				NewGenesisBlockFunc: blockchain.NewGenesisBlock,
+			}),
+			blockInTransport:      newBlockInTransport(),
 			signalQuit:            make(chan struct{}),
 			signalRequestHeight:   make(chan struct{}),
 			signalSendTransaction: make(chan *blockchain.Transaction),
@@ -202,15 +293,59 @@ func (s *BlockChainService) RunGetBlockAck(t *dht.Transport, msg *messages.Messa
 	}
 
 	block := blockchain.DeserializeBlock(payload.Block)
-	logrus.Infof("Received a new block: %x", block.Header.Hash)
+	logrus.Infof("received a new block: %x", block.Header.Hash)
+
+	s.verifyAndAddBlock(block, msg)
+
+	s.blockInTransport.Iterator(func(b *blockchain.Block) error {
+		if b == block {
+			return nil
+		}
+		s.verifyAndAddBlock(b, msg)
+		return nil
+	}, true)
+
+	return nil
+}
+
+func (s *BlockChainService) verifyAndAddBlock(block *blockchain.Block, msg *messages.Message) {
+	err := s.c.DB.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(global.ChainStateBucketIdentity))
+
+		decoder := gob.NewDecoder(bytes.NewReader(block.Body.Data))
+		trans := make(blockchain.TransactionContainer, 0)
+		err := decoder.Decode(&trans)
+		if err != nil {
+			logrus.Panicf("RunGetBlockAck error: block data cant be decoded")
+		}
+
+		for _, tran := range trans {
+			if tran.IsCoinBase() {
+				continue
+			}
+			for _, input := range tran.Inputs {
+				serializedOutputs := bucket.Get(input.TransactionID)
+				if serializedOutputs == nil || len(serializedOutputs) == 0 {
+					if !s.blockInTransport.Has(block.Header.Hash) {
+						s.blockInTransport.Set(block)
+					}
+					return errors.New(fmt.Sprintf("%x block's trans not found, set into map", block.Header.Hash))
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		logrus.Warningf("RunGetBlockAck error: %v", err)
+		return
+	}
 
 	s.c.AddBlock(block)
 	chainState := blockchain.ChainState{BlockChain: s.c}
 	chainState.Update(block)
-
 	BroadcastBlock(block, msg)
-
-	return nil
 }
 
 func (s *BlockChainService) RunNewTransaction(t *dht.Transport, msg *messages.Message) error {

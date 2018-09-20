@@ -136,7 +136,7 @@ func (c *ChainProtobufClient) SendRequest(request *dht.Request, retry int) {
 
 	err := c.Send(request)
 	if err != nil {
-		logrus.Warningf("[ChainProtobufClient].Request c.Send err: %v", err)
+		logrus.Errorf("[ChainProtobufClient].Request c.Send err: %v", err)
 	}
 Run:
 	for {
@@ -150,7 +150,7 @@ Run:
 	}
 
 	if !response {
-		logrus.Warningf("[ChainProtobufClient] response timeout, tranID: %d", tranID)
+		logrus.Errorf("[ChainProtobufClient] response timeout, tranID: %d", tranID)
 	}
 }
 
@@ -173,9 +173,10 @@ func (c *ChainProtobufClient) Receive(receiveChannel chan dht.Packet) {
 		count, err := c.conn.Read(buffer)
 		if err != nil {
 			if err != io.EOF {
-				logrus.Error(err.Error())
+				logrus.Errorf("[ChainProtobufClient] Receive error: %v", err)
 			}
-			continue
+			c.peer.Close()
+			break
 		}
 		if count == 0 {
 			continue
@@ -184,7 +185,7 @@ func (c *ChainProtobufClient) Receive(receiveChannel chan dht.Packet) {
 	}
 }
 
-func (c *ChainProtobufClient) handleDeserializeData(readedMessage chan *messages.Message, receiveChannel chan dht.Packet, conn net.Conn) {
+func (c *ChainProtobufClient) handleDeserializeData(readedMessage <-chan *messages.Message, receiveChannel chan dht.Packet, conn net.Conn) {
 	for {
 		msg, isOpened := <-readedMessage
 		if !isOpened || msg == nil {

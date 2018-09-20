@@ -21,6 +21,7 @@ import (
 	"bufio"
 	"fmt"
 	"strings"
+	"github.com/johnnyeven/chain/network"
 )
 
 func main() {
@@ -37,6 +38,9 @@ func main() {
 		if command == "" {
 			continue
 		} else if command == "quit" || command == "exit" {
+			if network.P2P != nil {
+				network.P2P.Close()
+			}
 			fmt.Println("Goodbye")
 			os.Exit(0)
 		}
