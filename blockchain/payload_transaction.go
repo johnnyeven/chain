@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	RewardAmount = 50
+	RewardAmount uint64 = 50
 )
 
 type Input struct {
@@ -26,7 +26,7 @@ type Input struct {
 }
 
 type Output struct {
-	Amount        int
+	Amount        uint64
 	PublicKeyHash []byte
 	ScriptPubKey  string
 }
@@ -46,7 +46,7 @@ func (out *Output) IsLockedWithKey(publicKeyHash []byte) bool {
 	return bytes.Compare(out.PublicKeyHash, publicKeyHash) == 0
 }
 
-func NewOutput(amount int, address string) Output {
+func NewOutput(amount uint64, address string) Output {
 	output := Output{
 		Amount:        amount,
 		PublicKeyHash: nil,
@@ -220,7 +220,7 @@ func NewGenesisBlock(to string, data string) *Block {
 	return NewBlock(trans.Serialize(), []byte{}, 0)
 }
 
-func NewTransaction(from, to string, amount int, c *BlockChain) Transaction {
+func NewTransaction(from, to string, amount uint64, c *BlockChain) Transaction {
 	inputs := make([]Input, 0)
 	outputs := make([]Output, 0)
 	chainState := ChainState{c}

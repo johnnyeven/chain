@@ -23,7 +23,7 @@ import (
 var (
 	from string
 	to string
-	amount int
+	amount uint64
 )
 
 // sendTransactionCmd represents the sendTransaction command
@@ -49,5 +49,5 @@ func init() {
 
 	sendTransactionCmd.Flags().StringVarP(&from, "from", "f", "", "")
 	sendTransactionCmd.Flags().StringVarP(&to, "to", "t", "", "")
-	sendTransactionCmd.Flags().IntVarP(&amount, "amount", "a", 0, "")
+	sendTransactionCmd.Flags().Uint64VarP(&amount, "amount", "a", 0, "")
 }

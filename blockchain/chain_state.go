@@ -64,9 +64,9 @@ func (s ChainState) Reindex() error {
 	return nil
 }
 
-func (s ChainState) FindSpendableOutputsMapping(publicKeyHash []byte, amount int) (int, map[string][]int) {
+func (s ChainState) FindSpendableOutputsMapping(publicKeyHash []byte, amount uint64) (uint64, map[string][]int) {
 	unspentOutputs := make(map[string][]int)
-	spendableAmount := 0
+	var spendableAmount uint64 = 0
 
 	db := s.BlockChain.DB
 	err := db.View(func(tx *bolt.Tx) error {
@@ -103,9 +103,9 @@ func (s ChainState) FindSpendableOutputsMapping(publicKeyHash []byte, amount int
 	return spendableAmount, unspentOutputs
 }
 
-func (s ChainState) FindSpendableOutputs(publicKeyHash []byte) (int, []Output) {
+func (s ChainState) FindSpendableOutputs(publicKeyHash []byte) (uint64, []Output) {
 	unspentOutputs := make([]Output, 0)
-	spendableAmount := 0
+	var spendableAmount uint64 = 0
 
 	db := s.BlockChain.DB
 	err := db.View(func(tx *bolt.Tx) error {
