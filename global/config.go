@@ -124,6 +124,7 @@ func checkFirstRunReceiveAddress(bucket *bolt.Bucket) {
 	if coinBaseReceiveAddress == "" {
 		logrus.Panic("must set a coinbase receiving address")
 	}
+	Config.ReceiveAddress = coinBaseReceiveAddress
 	bucket.Put([]byte(ConfigReceiveAddressKey), []byte(coinBaseReceiveAddress))
 }
 

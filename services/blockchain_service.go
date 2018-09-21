@@ -293,7 +293,7 @@ func (s *BlockChainService) RunGetBlockAck(t *dht.Transport, msg *messages.Messa
 	}
 
 	block := blockchain.DeserializeBlock(payload.Block)
-	logrus.Infof("received a new block: %x", block.Header.Hash)
+	logrus.Debugf("received a new block: %x", block.Header.Hash)
 
 	s.verifyAndAddBlock(block, msg)
 
@@ -342,10 +342,18 @@ func (s *BlockChainService) verifyAndAddBlock(block *blockchain.Block, msg *mess
 		return
 	}
 
-	s.c.AddBlock(block)
-	chainState := blockchain.ChainState{BlockChain: s.c}
-	chainState.Update(block)
-	BroadcastBlock(block, msg)
+	if s.blockInTransport.Has(block.Header.Hash) {
+		s.blockInTransport.Delete(block.Header.Hash)
+	}
+
+	ok := s.c.AddBlock(block)
+	if ok {
+
+		chainState := blockchain.ChainState{BlockChain: s.c}
+		chainState.Update(block)
+
+		BroadcastBlock(block, msg)
+	}
 }
 
 func (s *BlockChainService) RunNewTransaction(t *dht.Transport, msg *messages.Message) error {

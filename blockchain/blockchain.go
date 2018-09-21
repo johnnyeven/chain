@@ -21,8 +21,6 @@ type BlockChain struct {
 var GeneralChain *BlockChain
 
 func (c *BlockChain) PackageBlock(data []byte) *Block {
-	//c.lock.Lock()
-	//defer c.lock.Unlock()
 
 	var lastHash []byte
 	var lastHeight uint64
@@ -46,9 +44,9 @@ func (c *BlockChain) PackageBlock(data []byte) *Block {
 	return block
 }
 
-func (c *BlockChain) AddBlock(block *Block) {
-	//c.lock.Lock()
-	//defer c.lock.Unlock()
+func (c *BlockChain) AddBlock(block *Block) (ok bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	pow := NewPOW(block)
 	if !pow.Validate() {
@@ -76,6 +74,10 @@ func (c *BlockChain) AddBlock(block *Block) {
 				return err
 			}
 			c.tip = block.Header.Hash
+			ok = true
+
+			logrus.Infof("add a new block: %x", block.Header.Hash)
+
 		}
 
 		return nil
@@ -84,6 +86,8 @@ func (c *BlockChain) AddBlock(block *Block) {
 	if err != nil {
 		logrus.Panicf("BlockChain.AddBlock bucket transaction err: %v", err)
 	}
+
+	return
 }
 
 func (c *BlockChain) Iterator() *BlockChainIterator {
@@ -96,8 +100,6 @@ func (c *BlockChain) Iterator() *BlockChainIterator {
 }
 
 func (c *BlockChain) GetBestHeight() uint64 {
-	//c.lock.Lock()
-	//defer c.lock.Unlock()
 
 	var lastHeight uint64
 	err := c.DB.View(func(tx *bolt.Tx) error {
@@ -121,8 +123,8 @@ func (c *BlockChain) GetBestHeight() uint64 {
 }
 
 func (c *BlockChain) GetBlock(blockHash []byte) *Block {
-	//c.lock.Lock()
-	//defer c.lock.Unlock()
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	var block *Block
 	err := c.DB.View(func(tx *bolt.Tx) error {
